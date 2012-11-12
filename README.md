@@ -1,0 +1,1 @@
+This project was done last year, in early 2012. This project used jQuery, soundManager and Django. I haven't included the settings_file, because I have some credentials in there, but I can add it without local_settings later.
