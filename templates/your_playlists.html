@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block script_content %}
+<script>
+function handleKeyPress(e)
+{
+	var key=e.keyCode || e.which;
+	if (key==13)
+	{
+		handleSearch();
+	}
+}
+
+function handleSearch()
+{
+	var input = $('#search-text').val();
+	$.ajax({
+		url: '/search?search='+input,
+		success: function(data) {
+			$('#playlists').html(data);
+		}
+	});
+}
+
+var songs = new Array();
+
+$(function() {
+	
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container column" id="left-col">
+	<h2 class="container-head">Top Playlists</h2>
+	<div class="content" id="left-content">				
+		<fieldset id="search">
+			<input type="text" id="search-text" value="Search Playlists" onclick="if (this.value == 'Search Playlists') this.value = '';" onfocus="this.select();" onblur="this.value = !this.value ? 'Search Playlists' : this.value;" onkeypress="handleKeyPress(event)" width=180px />
+			<input type="submit" id="search-submit" value="" />
+		</fieldset>
+		
+		<div id="playlists">
+			{% for playlist in top_playlists %}
+			<a class="playlist" href="/playlist/{{ playlist.pk }}"><span class="playlist"><span class="upvotes" style="margin: 0 10px 0 8px">{{ playlist.upvotes }}<img src="/media/uparrow.png" /></span><h3>{{ playlist.name }}</h3><br/><span class="creator">by: {{ playlist.user.username }}</span></span><div class="clearfix"></div></a>
+			{% endfor %}
+		</div>
+	</div>
+</div>
+
+<div class="container column" id="right-col">
+	<h2 class="container-head">Your playlists</h2>
+	<form id="create-playlist" method='POST' action="/create_playlist">
+	<div class="content" id="right-content">
+		<div id="your_playlists">
+			{% for playlist in your_playlists %}
+			<a class="playlist" href="/playlist/{{ playlist.pk }}"><span class="playlist"><span class="upvotes" style="margin: 0 10px 0 8px">{{ playlist.upvotes }}<img src="/media/uparrow.png" /></span><h3>{{ playlist.name }}</h3></span><div class="clearfix"></div></a>
+			{% endfor %}
+		</div>
+	</div>
+	</form>
+</div>
+
+<div class="clearfix"></div>
+{% endblock %}

@@ -1,0 +1,21 @@
+from django.core.mail import send_mail
+from hastlib import md5
+from django.template import loader, Context
+
+def send_activation(user):
+    code = md5(user.username).hexdigest()
+    url = "http://127.0.0.1:8000/activate/?user=%s&code=%s" % (user.username, code)
+    print(url)
+    template = loader.get_template('activation.html')
+    context = Context({'username': user.username, 'url':url,})
+
+    send_mail('Activate your Spotmatch account', template.render(context), 'no-reply@spotmatch.rmenez.es', [user.username])
+
+def send_activation_test(user):
+    code = md5(user.username).hexdigest()
+    url = "http://127.0.0.1:8000/activate/?user=%s&code=%s" % (user.username, code)
+    print(url)
+    template = loader.get_template('activation.html')
+    context = Context({'username': user.username, 'url':url,})
+
+    send_mail('Activate your Spotmatch account', template.render(context), 'no-reply@spotmatch.rmenez.es', [user.username])

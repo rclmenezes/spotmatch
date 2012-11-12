@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block script_content %}
+<script>
+// from http://stackoverflow.com/a/3593056
+// implement JSON.stringify serialization
+JSON.stringify = JSON.stringify || function (obj) {
+    var t = typeof (obj);
+    if (t != "object" || obj === null) {
+        // simple data type
+        if (t == "string") obj = '"'+obj+'"';
+        return String(obj);
+    }
+    else {
+        // recurse array or object
+        var n, v, json = [], arr = (obj && obj.constructor == Array);
+        for (n in obj) {
+            v = obj[n]; t = typeof(v);
+            if (t == "string") v = '"'+v+'"';
+            else if (t == "object" && v !== null) v = JSON.stringify(v);
+            json.push((arr ? "" : '"' + n + '":') + String(v));
+        }
+        return (arr ? "[" : "{") + String(json) + (arr ? "]" : "}");
+    }
+};
+
+function handleKeyPress(e)
+{
+	var key=e.keyCode || e.which;
+	if (key==13)
+	{
+		handleSearch();
+	}
+}
+
+function handleSearch()
+{
+	var input = $('#search-text').val();
+	$('#search-results').hide();
+	$('p#first-instructions').hide();
+	$('ul#result-tracks').html("");
+	$('#search-loading').show();
+	$.ajax({
+		url: 'http://ws.spotify.com/search/1/track.json',
+		data: {q: input},
+		success: function(data) {
+			//console.log(data);
+			$('#left-col > h2.container-head').html("Results");
+			if ($.trim($('#playlist span').html()).length==0)
+				$('p#second-instructions').show();
+			$('#search-results').html("");
+			$('#search-loading').hide();
+			$('#search-results').show();
+			var tracks = data.tracks;
+			$.each(tracks, function(index, track) {
+				var name = track.name;
+				var album = track.album.name;
+				var href = track.href;
+				var duration = track.length;
+				var artists = "";
+				$.each(track.artists, function(index, artist) {
+					artists += artist.name;
+					if (index + 1 != track.artists.length)
+						artists += " & ";
+				});
+				$('#search-results').append('<span id=' + href + ' class="track"><h3 class="track-name">' + name + '</h3><span class="artists">' + artists + '</span> - <span class="album">' + album +'</span><span class="duration" style="display: none;">' + duration + '</span></span>');
+			});
+			$('.moveable span').bind('mousedown', function() {
+				$('p#second-instructions').hide();
+			});
+		}
+	});
+}
+
+function updateSongs()
+{
+	songs = []
+	$.each($('#playlist .track'), function(key, track)
+	{	
+		var artist = $(track).find(".artists")[0].textContent;
+		var album = $(track).find(".album")[0].textContent;
+		var duration = $(track).find(".duration")[0].textContent;
+		var name = $(track).find(".track-name")[0].textContent;
+		songs[key] = { track_id: track.id, artist: artist, album: album, name: name, duration: duration };	
+	});
+	$('input#songs').val(JSON.stringify(songs));
+}
+
+var songs = new Array();
+
+$(function() {
+	updateSongs();
+	
+	$('.moveable').sortable({
+		connectWith: '.moveable',
+		cursor: 'move',
+		tolerance: 'pointer'
+	});
+	$('#playlist').bind('sortupdate', function(event,ui){
+		$('.orange-button').css('color', 'white');
+		updateSongs();
+		console.log(songs);
+	});
+	$('#playlist').bind('sortremove', function(event,ui){
+		$('.orange-button').css('color', '#CDCDCD');
+		if ($.trim($('#playlist').html()).length==0)
+			$('p#second-instructions').show();
+	});
+	$('form#create-playlist').submit(function(e){
+		if($('input[name=playlist-name]').val() == 'Playlist name') {
+		        //stop the form from submitting
+		        e.preventDefault();
+		        alert("Name your playlist before creating it.");
+		}
+		
+		return true;
+	});
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container column" id="left-col">
+	<h2 class="container-head">Add songs</h2>
+	<div class="content" id="left-content">				
+		<fieldset id="search">
+			<input type="text" id="search-text" value="Search Spotify" onclick="if (this.value == 'Search Spotify') this.value = '';" onfocus="this.select();" onblur="this.value = !this.value ? 'Search Spotify' : this.value;" onkeypress="handleKeyPress(event)" width=180px />
+			<input type="submit" id="search-submit" value="" />
+		</fieldset>
+		
+		<div id="search-loading" style="display: none; margin: 0 auto; width: 80px;">
+			<div style="margin: 50px 0 0 0;"></div>
+			<img src="/static/loading_transparent.gif" width=80px />
+		</div>
+		
+		<div class="moveable" id="search-results">
+		</div>
+	</div>
+</div>
+
+<div class="container column" id="right-col">
+	<h2 class="container-head">Create your playlist</h2>
+	<form id="create-playlist" method='POST' action="/create_playlist">
+	<div class="content" id="right-content">
+		<div style="text-align: center;">
+			<fieldset id="playlist-name">
+				<input type="text" id="playlist-name" name="playlist-name" value="{% if playlist %}{{ playlist.name }}{% else %}Playlist name{% endif %}" onclick="if (this.value == 'Playlist name') this.value = '';" onfocus="this.select();" onblur="this.value = !this.value ? 'Playlist name' : this.value;" onkeypress="handleKeyPress(event)" width=180px />
+			</fieldset>
+		</div>
+		<input type='hidden' name="songs" id="songs" />
+		<div id="playlist" class="moveable">
+			<p class="instructions" id="first-instructions"{% if playlist %}style="display: none;"{% endif %}>Use the search function to add tracks.</p>
+			<p class="instructions" id="second-instructions" style="display: none;">Great!<br/>Now drag your song here.</p>
+			{% for playlist_song in playlist_songs %}
+				<span id='spotify:track:{{ playlist_song.song.spotify_id }}' class="track"><h3 class="track-name">{{ playlist_song.song.name }}</h3><span class="artists">{{ playlist_song.song.artist }}</span> - <span class="album">{{ playlist_song.song.album }}</span><span class="duration" style="display: none;">{{ playlist_song.song.duration }}</span></span>
+			{% endfor %}
+		</div>
+		<div class="orange-button analyze" style="text-align: center;">
+			<a style="text-align: center;"><input type="submit" style="background: transparent; border: none; width: 200px; font-size: 20px; text-align: center; color: white;" value="Create Playlist" /></a>
+		</div>
+	</div>
+	</form>
+</div>
+
+<div class="clearfix"></div>
+{% endblock %}

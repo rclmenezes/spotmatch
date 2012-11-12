@@ -1,0 +1,40 @@
+import os, sys
+from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404, render_to_response
+from spotmatchapp.models import *
+from path3 import find_path
+
+def check_file_size(spotify_id):
+    file_path = "/srv/spotmatch/static/spotify:track:" + spotify_id + ".wav"
+    try:
+        statinfo =  os.stat(file_path)
+        return statinfo.st_size
+    except:
+        return 0
+
+def home(request):
+    return render_to_response('spotmatch.html')
+    
+def makePlaylist(request):
+    if request.method == 'POST' and 'track_id' in request.POST and 'artist' in request.POST and 'album' in request.POST and 'name' in request.POST and 'duration' in request.POST and len(request.POST['track_id']) <= 36:
+        track_id = request.POST['track_id'][14:] # Removes first part
+        name = request.POST['name']
+        artist = request.POST['artist']
+        album = request.POST['album']
+        duration = request.POST['duration']
+        # Make sure lengths are compatible with db
+        if len(name) > 200:
+            name = name[:200]
+        if len(artist) > 200:
+            artist = artist[:200]
+        if len(album) > 200:
+            album = album[:200]
+        song, created = Song.objects.get_or_create(spotify_id=track_id, name=name, artist=artist, album=album, duration=duration)
+        
+        size = check_file_size(track_id)
+        if size < 4000000:
+            cmd = "/home/jmena/joseulisesmena-technic-565e922/examples/jukebox/playtrack -u joseulisesmena -p orniter2 -t spotify:track:" + track_id
+            os.system(cmd)
+            return HttpResponse("Getting file")
+        return HttpResponse("Already have")
+    raise Http404

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block script_content %}
+<script>
+</script>
+{% endblock %}
+
+{% block top %}
+{% endblock %}
+
+{% block content %}
+<div class="container big-column">
+	<div id="top">
+	<img src="/media/spotmatch2.png" width=320 height=50 />
+		<ul id="menu">
+			<li><a href="/login">Login</a></li>
+			<li><a href="/register">Create account</a></li>
+		</ul>
+	</div>
+
+<div class="ribbon">
+	<div id="center_sell"><h2>Discover a new way to browse Spotify</h2><span>Spotmatch allows you to beatmatch music from Spotify into one cohesive playlist.<br/> The future of Spotify is here.</span></div>
+	<div class="orange-button sample" style="text-align: center; float: right;">
+		<a type="button" href="/playlist/6">Try a sample playlist >></a>
+	</div>
+</div>
+
+<div class="left-box">
+	<h2>Browse the Spotify library online</h2>
+	<img src="/media/search.png" width=70 height=70 style="float: left; margin-right: 10px;" />
+	<p>Think of a song. Any song. Odds are, it's probably on Spotify. Use its massive library to find your song.</p>
+</div>
+<div class="right-box">
+	<h2>Beatmatch your favorite songs</h2>
+	<img src="/media/note.png" width=70 height=70 style="float: left; margin-right: 10px;" />
+	<p>Trying to throw a party? Quick, online beatmatching for you playlists. Personalized, just for you.</p>
+</div>
+<div class="left-box">
+	<h2>Keep track of your playlists</h2>
+	<img src="/media/book.png" width=70 height=70 style="float: left; margin-right: 10px;" />
+	<p>Make a great playlist? Keep it forever, edit it, do with it what you like.</p>
+</div>
+<div class="right-box">
+	<h2>Share and browse playlists</h2>
+	<img src="/media/community.png" width=70 height=70 style="float: left; margin-right: 10px;" />
+	<p>Upvote or downvote playlists. Discover new music. Share playlists with your friends!</p>
+</div>
+<div class="clearfix"></div>
+<div class="orange-button signup" style="text-align: center;">
+	<a type="button" href="/register">Sweet! Sign me up!</a>
+</div>
+<div class="footer" style="text-align: center; margin-bottom: 10px; font-size: 12px;">
+	&copy; Spotmatch 2012 <br/>
+	Built by Rodrigo Menezes, Jose Mena, Teo Georgiev and Kelly Weeks
+</div>
+</div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}

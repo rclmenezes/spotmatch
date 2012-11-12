@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block script_content %}
+<script type="text/javascript" src="/soundmanager/script/soundmanager2.js"></script>
+<script type="text/javascript" src="/soundmanager/demo/mp3-player-button/script/mp3-player-button.js"></script>
+<script type="text/javascript">
+soundManager.url = 'soundmanager/swf/';
+
+function getSID(track)
+{
+	return basicMP3Player.getSoundByURL($(track).find('a')[0].href).sID;
+}
+
+function startPlay()
+{
+	play_next(0, 3000, 3000);
+}
+
+function play_next(key, upFade, downFade)
+{
+	var tracks = $('.track-play');
+	var track = tracks[key];
+	if (track == undefined)
+		return;
+		
+	var a_tag = $(track).find('a');
+	if (a_tag.length === 0)
+		return;	
+	var e = {target: a_tag[0], preventDefault: function() {}};
+	
+	basicMP3Player.handleClick(e);
+	var sid = getSID(track); // has to be after handleclick
+	var soundObject = basicMP3Player.sounds[key];
+	var duration = parseFloat($(".track-play").find('.duration').html());
+	//var duration = soundObject.durationEstimate;
+	//alert(duration);
+	fadeUp(sid, upFade);
+	soundManager.onPosition(sid, duration*1000-5000, function(eventPosition)
+	{
+		fadeDown(sid, downFade);
+		play_next(key+1, 3000, 3000);
+	});
+}
+
+function fadeUp(soundId, time) {
+    soundManager.setVolume(soundId, 0);
+    //soundManager.play(soundId);
+    var jumps = 100;
+    var volume_increments = 100/jumps;
+    var time_increments = time/jumps;
+    var i;
+    for (i = 0; i <= jumps; i++)
+    {
+        var command = "soundManager.setVolume('" + soundId + "'," + volume_increments*i + ");";
+		//console.log(command + " " + time_increments*i);
+		setTimeout(command, time_increments*i);
+    }
+}
+
+function fadeDown(soundId, time) {
+	soundManager.setVolume(soundId, 100);
+	var jumps = 100;
+	var volume_increments = 100/jumps;
+	var time_increments = time/jumps;
+	var i;
+	for (i = jumps; i > 0; i--)
+	{
+	    var command = "soundManager.setVolume('" + soundId + "'," + volume_increments*i + ");";
+		//console.log(command + " " + (time-time_increments*i));
+		setTimeout(command, time-time_increments*i);
+	}
+}
+
+var upvote = {% if upvote %}true{% else %}false{% endif %};
+
+function set_upvote_background()
+{
+	if (upvote)
+	{
+		$('.upvote-box').css('background', '#E9E9E9');
+	}
+	else
+	{
+		$('.upvote-box').css('background', 'transparent');
+	}
+}
+
+$(function() {
+	set_upvote_background();
+	
+	$('.upvote-box').click(function(){
+		upvote = !upvote;
+		set_upvote_background();
+		if (upvote)
+		    var upvotes = parseInt($('span.upvotes')[0].textContent) + 1;
+		else
+			var upvotes = parseInt($('span.upvotes')[0].textContent) - 1;
+		$($('span.upvotes')[0]).html(upvotes);
+		$.ajax("/upvote/{{ playlist.pk }}");
+	});
+	
+	{% if ready %}
+	$.ajax({
+	  url: '/beatmatch/{{ playlist.pk }}',
+	  success: function(data) {
+	    $('#playlist-content').show();
+		$('#loading').hide();
+	  }
+	});
+	{% endif %}
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container big-column">
+<h2 class="container-head">{{ playlist.name }}</h2>
+
+{% if not ready %}
+<p style="color: red;">Not all the necessary files have been downloaded from Spotify. Please wait and check back soon.</p>
+{% else %}
+<div id="loading" style="display: block; width: 210px; text-align: center; margin: 0 auto;">
+<img width=100px src="/static/loading_transparent.gif" />
+<p>Playlist Loading...</p>
+<p>This may take up to a minute</p>
+<br/>
+</div>
+{% endif %}
+
+<div id="playlist-content" style="{% if ready %}display: none{% endif %}">	
+	<div id="song_about">
+		<span id="made_by">Made by: {{ playlist.user.username }}</span>
+		{% if user %}
+		<div class="upvote-box" style="border: solid 1px black;">
+			<span class="upvotes" style="inline-block">{{ playlist.upvotes }}</span><img src="/media/uparrow.png" style="inline-block" />&nbsp;Sweet!
+		</div>
+		{% endif %}
+		{% if owner %}
+		<a href="/delete/{{ playlist.pk }}">Delete this playlist</a>
+		<a href="/edit/{{ playlist.pk }}">Edit this playlist</a>
+		{% endif %}
+	</div>
+	
+	<div class="clearfix"></div>
+	
+	{% for playlist_song in playlist_songs %}
+	<span class="playlist-track">
+		<span>
+			{{ playlist_song.song.name }}<br/>
+			{{ playlist_song.song.artist }} - {{ playlist_song.song.album }}
+		</span>
+		{% if ready %}
+		<span class="track-play" style="float: right">
+			<a href="http://spotmatch.rmenez.es/static/spotify:track:{{ playlist_song.song.spotify_id }}_{{ playlist.pk }}.ogg" class="sm2_button" style="float: left; margin-right: 5px;">
+				{{ playlist_song.song.name }}
+			</a>
+			<h3 class="track-name" style="display: none;">{{ playlist_song.song.name }}</h3>
+			<span class="artists" style="display: none;">{{ playlist_song.song.artists }}</span>
+			<span class="album" style="display: none;">{{ playlist_song.song.album }}</span>
+			<span class="duration" style="display: none;">{{ playlist_song.song.duration }}</span>
+			<span class="spotify_id" style="display: none;">{{ playlist_song.song.spotify_id }}</span>
+		</span>
+		{% else %}
+		<span style="float: right; color: {% if playlist_song.song.file_present %}green{% else %}{% if playlist_song.song.bpm == -1 %}red{% endif %}#F2E441{% endif %};">
+			{% if playlist_song.song.file_present %}File present{% else %}{% if playlist_song.song.bpm == -1 %}File cannot be downloaded!{% endif %}File not here yet.{% endif %}
+		</span>
+		{% endif %}
+	</span>
+	{% endfor %}
+</div>
+</div>
+{% endblock %}

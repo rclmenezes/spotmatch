@@ -1,0 +1,3 @@
+{% for playlist in playlist_list %}
+<a class="playlist" href="/playlist/{{ playlist.pk }}"><span class="playlist"><span class="upvotes" style="margin: 0 10px 0 8px">{{ playlist.upvotes }}<img src="/media/uparrow.png" /></span><h3>{{ playlist.name }}</h3><br/><span class="creator">by: {{ playlist.user.username }}</span></span><div class="clearfix"></div></a>
+{% endfor %}

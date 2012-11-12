@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>Spotmatch</title>
+
+	<!-- Adding CSS -->
+	<link rel="stylesheet" type="text/css" href="static/reset.css" />
+	<link rel="stylesheet" type="text/css" href="static/style.css" />
+	<link rel="stylesheet" type="text/css" href="soundmanager/demo/mp3-player-button/css/mp3-player-button.css" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="soundmanager/script/soundmanager2.js"></script>
+	<script type="text/javascript" src="soundmanager/demo/mp3-player-button/script/mp3-player-button.js"></script>
+	<script>
+	</script>
+</head>
+
+<body>
+	<div id="wrapper">
+		<div class="container" id="top">
+			<h1>SpotMatch</h1>
+				<ul id="menu">
+					<li><a href="/logout">Logout</a></li>
+					<li><a href="create">Create a playlist</a></li>
+					<li><a href="your_playlists">Your playlists</a></li>
+				</ul>	
+				<!--<a href="http://spotmatch.rmenez.es/static/somebody.wav" class="sm2_button" style="float: left; margin-right: 5px; display: none;">Call Me Maybe</a>-->
+		</div>
+		
+		<div class="container column" id="left-col">
+			<h2 class="container-head">Top Playlists</h2>
+			<div class="content" id="left-content">				
+				<fieldset id="search">
+					<input type="text" id="search-text" value="Search Playlists" onclick="if (this.value == 'Search Playlists') this.value = '';" onfocus="this.select();" onblur="this.value = !this.value ? 'Search Playlists' : this.value;" onkeypress="handleKeyPress(event)" width=180px />
+					<input type="submit" id="search-submit" value="" />
+				</fieldset>
+			</div>
+		</div>
+		
+		<div class="container column" id="right-col">
+			<h2 class="container-head">Your Playlists</h2>
+			<div class="content" id="right-content">
+			</div>
+		</div>
+		
+		<div class="clearfix"></div>
+	</div>
+</body>
+</html>

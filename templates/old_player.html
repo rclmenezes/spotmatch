@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block script_content %}
+<script type="text/javascript" src="/soundmanager/script/soundmanager2.js"></script>
+<script type="text/javascript" src="/soundmanager/demo/mp3-player-button/script/mp3-player-button.js"></script>
+<script>
+soundManager.url = 'soundmanager/swf/';
+
+var playlistStart = false; // Used for instructions
+
+function handleKeyPress(e)
+{
+	var key=e.keyCode || e.which;
+	if (key==13)
+	{
+		handleSearch();
+	}
+}
+
+function getSID(track)
+{
+	return basicMP3Player.getSoundByURL($(track).find('a')[0].href).sID;
+}
+
+function startPlay()
+{
+	play_next(0, 3000, 3000);
+}
+
+function play_next(key, upFade, downFade)
+{
+	var tracks = $('#playlist .track');
+	var track = tracks[key];
+	if (track == undefined)
+		return;
+		
+	var a_tag = $(track).find('a');
+	if (a_tag.length === 0)
+		return;
+	var duration = parseFloat($(track).find(".duration")[0].textContent)	
+	var e = {target: a_tag[0], preventDefault: function() {}};
+	
+	basicMP3Player.handleClick(e);
+	var sid = getSID(track); // has to be after handleclick
+	fadeUp(sid, upFade);
+	soundManager.onPosition(sid, duration*1000-5000, function(eventPosition)
+	{
+		fadeDown(sid, downFade);
+		play_next(key+1, 3000, 3000);
+	});
+}
+
+function handleSearch()
+{
+	var input = $('#search-text').val();
+	$('#search-results').hide();
+	$('ul#result-tracks').html("");
+	$('#search-loading').show();
+	$.ajax({
+		url: 'http://ws.spotify.com/search/1/track.json',
+		data: {q: input},
+		success: function(data) {
+			//console.log(data);
+			$('#left-col > h2.container-head').html("Results");
+			if ($.trim($('#playlist').html()).length==0)
+				$('p#second-instructions').show();
+			$('#search-results').html("");
+			$('#search-loading').hide();
+			$('#search-results').show();
+			$('p#first-instructions').hide();
+			var tracks = data.tracks;
+			$.each(tracks, function(index, track) {
+				var name = track.name;
+				var album = track.album.name;
+				var href = track.href;
+				var duration = track.length;
+				var artists = "";
+				$.each(track.artists, function(index, artist) {
+					artists += artist.name;
+					if (index + 1 != track.artists.length)
+						artists += " & ";
+				});
+				$('#search-results').append('<span id=' + href + ' class="track"><h3 class="track-name">' + name + '</h3><span class="artists">' + artists + '</span> - <span class="album">' + album +'</span><span class="duration" style="display: none;">' + duration + '</span></span>');
+			});
+			$('.moveable span').bind('mousedown', function() {
+				$('p.instructions').hide();
+				$('#orange-button').show();
+			});
+		}
+	});
+}
+
+function fadeUp(soundId, time) {
+    soundManager.setVolume(soundId, 0);
+    //soundManager.play(soundId);
+    var jumps = 100;
+    var volume_increments = 100/jumps;
+    var time_increments = time/jumps;
+    var i;
+    for (i = 0; i <= jumps; i++)
+    {
+        var command = "soundManager.setVolume('" + soundId + "'," + volume_increments*i + ");";
+		//console.log(command + " " + time_increments*i);
+		setTimeout(command, time_increments*i);
+    }
+}
+
+function fadeDown(soundId, time) {
+	soundManager.setVolume(soundId, 100);
+	var jumps = 100;
+	var volume_increments = 100/jumps;
+	var time_increments = time/jumps;
+	var i;
+	for (i = jumps; i > 0; i--)
+	{
+	    var command = "soundManager.setVolume('" + soundId + "'," + volume_increments*i + ");";
+		//console.log(command + " " + (time-time_increments*i));
+		setTimeout(command, time-time_increments*i);
+	}
+}
+
+var songs = new Array();
+
+$(function() {
+	$('.moveable span').draggable({
+		connectToSortable: '.moveable',
+		handle: 'h3',
+		cursor: 'move',
+		helper: 'clone',
+		revert: "invalid"
+	});
+	$('.moveable').sortable({
+		connectWith: '.moveable',
+		cursor: 'move',
+		tolerance: 'pointer',
+		revert: true
+	});
+	$('#playlist').bind('sortreceive', function(event,ui){
+		$('#orange-button').css('color', 'white');
+	});
+	$('#playlist').bind('sortremove', function(event,ui){
+		$('#orange-button').css('color', '#CDCDCD');
+		if ($.trim($('#playlist').html()).length==0)
+			$('p#second-instructions').show();
+	});
+	$('#orange-button').click(function() {
+		//$('#playlist').hide();
+		
+		$.each($('#playlist .track'), function(key, track)
+		{	
+			var artist = $(track).find(".artists")[0].textContent;
+			var album = $(track).find(".album")[0].textContent;
+			var duration = $(track).find(".duration")[0].textContent;
+			var name = $(track).find(".track-name")[0].textContent;
+			songs[key] = { track_id: track.id, artist: artist, album: album, name: name, duration: duration };
+			
+			if ($(track).find('a').length === 0)
+			{
+				//console.log(artist + " " + album + " " + name);
+				$.ajax({
+				  type: "POST",
+				  url: "http://spotmatch.rmenez.es/makePlaylist",
+				  data: { track_id: track.id, artist: artist, album: album, name: name, duration: duration }
+				});
+				$(track).prepend('<a href="http://spotmatch.rmenez.es/static/' + track.id +'.wav" class="sm2_button" style="float: left; margin-right: 5px;">' + name + '</a>');
+			}
+			
+			// Hacky mcHackersons.
+			basicMP3Player.addEventHandler(document, 'click', basicMP3Player.handleClick);
+			//$($('#playlist .track')[0]).find('a').click();	
+		});
+			
+			/*if ($(track).find('a').length === 0)
+			{
+				$(track).prepend('<a href="http://spotmatch.rmenez.es/static/' + track.id +'.wav" class="sm2_button" style="float: left; margin-right: 5px;">' + name + '</a>');
+			}	
+		
+		});	
+		$.ajax({
+			type: "POST",
+			url: "http://spotmatch.rmenez.es/makeTrack",
+			data: {songs: songs},
+			success: function(data) {
+				
+			}
+		})
+			*/
+	});
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container column" id="left-col">
+	<h2 class="container-head">Add songs</h2>
+	<div class="content" id="left-content">				
+		<fieldset id="search">
+			<input type="text" id="search-text" value="Search Spotify" onclick="if (this.value == 'Search Spotify') this.value = '';" onfocus="this.select();" onblur="this.value = !this.value ? 'Search Spotify' : this.value;" onkeypress="handleKeyPress(event)" width=180px />
+			<input type="submit" id="search-submit" value="" />
+		</fieldset>
+		
+		<div id="search-loading" style="display: none; margin: 0 auto; width: 80px;">
+			<div style="margin: 50px 0 0 0;"></div>
+			<img src="static/loading_transparent.gif" width=80px />
+		</div>
+		
+		<div class="moveable" id="search-results" style="display: none;">
+		</div>
+	</div>
+</div>
+
+<div class="container column" id="right-col">
+	<h2 class="container-head">Playlist</h2>
+	<div class="content" id="right-content">
+		<p class="instructions" id="first-instructions">Use the search function to add tracks.</p>
+		<p class="instructions" id="second-instructions" style="display: none;">Great!<br/>Now drag your song here.</p>
+		<div id="playlist" class="moveable">
+		</div>
+		<div class="orange-button analyze" style="text-align: center; display: none;">
+			<a type="button" value="Analyze">Analyze</a>
+		</div>
+	</div>
+</div>
+
+<div class="clearfix"></div>
+{% endblock %}
